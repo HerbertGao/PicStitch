@@ -66,10 +66,28 @@ def merge_image(src_dir, out_path):
 
     for p in layer_paths:
         ci = Image.open(p).convert("RGB")
-        result = ImageChops.darker(result, ci)
+        bg = detect_bg_color(ci)
+        if bg == 'white':
+            # 白底：用暗度混合，将白色区域（255）保留下来
+            result = ImageChops.darker(result, ci)
+        else:
+            # 黑底：用提亮混合，将黑色区域（0）保留下来
+            result = ImageChops.lighter(result, ci)
 
     result.save(out_path)
     print(f"[√] Merge OK → {out_path}")
+
+def detect_bg_color(img):
+    # 判断四个角的灰度平均值，<128 则当作黑底，否则当作白底
+    gray = img.convert("L")
+    w, h = gray.size
+    corners = [
+        gray.getpixel((0, 0)),
+        gray.getpixel((w-1, 0)),
+        gray.getpixel((0, h-1)),
+        gray.getpixel((w-1, h-1)),
+    ]
+    return 'black' if sum(corners) / 4 < 128 else 'white'
 
 def main():
     # 如果未提供命令行参数，则进入交互式引导
